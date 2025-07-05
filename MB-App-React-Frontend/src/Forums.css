@@ -1,0 +1,92 @@
+textarea {
+    width: 65%;
+    height: 150px;
+    padding: 12px 20px;
+    box-sizing: border-box;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    background-color: #f8f8f8;
+    resize: none;
+    border-radius: 10px;
+
+  }
+
+  table {
+    border: 1px solid black;
+    border-radius: 10px;
+    background-color: #96D4D4;
+    padding: 15px;
+    width: 85%;
+
+  }
+ 
+  button {
+    border-radius: 10px;
+    border: none;
+
+  }
+
+  .reply-table {
+    margin-left: 100px;
+
+  }
+
+  .hidden {
+    visibility: hidden;
+    border: none;
+  }
+
+  .post-display{
+    border: 1px solid black;
+    border-radius: 10px;
+    background-color: #96D4D4;
+    padding: 15px;
+
+  }
+
+  hr {
+    border: 5px solid #730080;
+    border-radius: 5px;
+  }
+
+  
+    ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #333333;
+    }  
+
+    li {
+      float: left;
+    }
+  
+  
+  .link {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 16px;
+    text-decoration: none;
+  }
+  
+  .link:hover {
+    background-color: #111111;
+  }
+
+  .page-counter{
+    display: block;
+    text-align: center;
+    padding: 16px;
+    text-decoration: none;
+    background-color: white;
+    list-style-type: none;
+    overflow: hidden;
+
+  }
+
+  .page-container{
+    display: flex;
+    justify-content: center;
+  }
