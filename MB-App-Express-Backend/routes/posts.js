@@ -31,7 +31,7 @@ function buildNestedTree(posts) {
   }
 
   console.log("post count:", posts.length)
-  console.log("built thread:",roots);
+  //console.log("built thread:",roots);
   return roots;
 }
 
@@ -61,6 +61,7 @@ router.get('/:forum_id/', async function(req, res, next) {
   forum_id = Number(req.params.forum_id);
   page = 1;
   page_limit = 10;
+  offset = 0;
 
   //paginate post results. 
   if (req.query.page){
@@ -75,37 +76,45 @@ router.get('/:forum_id/', async function(req, res, next) {
     page_limit = 10;
   }
 
+   if (page > 1){
+      offset = (page * page_limit) - page_limit;
+
+      console.log("page offset > 0 , query text: ", query.text);
+
+    }
+
   console.log('page', page, 'page_limit', page_limit);
 
   try {
 
-    const query = {
-      // give the query a unique name
-      name: 'get-posts' + String(Date.now()),
-      text: 'SELECT * FROM posts WHERE forum_id = $1 AND title IS NOT NULL ORDER BY post_time DESC',
-      values: [forum_id]
-    
-    }
+   
     //db query to retrieve all forum posts from db and recursively retrieve replies for each post.
     const new_get_posts_query = {
       name: 'get-posts-new' + String(Date.now()),
-      text: ' WITH RECURSIVE thread_tree (\
-      post_id, forum_id, title, body, poster_id, post_time, parent_post_id\
-      ) AS (\
-      \
-      SELECT post_id, forum_id, title, body, poster_id, post_time, parent_post_id\
-      FROM posts\
-      WHERE forum_id = $1 AND parent_post_id IS NULL\
-      \
-      UNION ALL\
-      \
-      SELECT p.post_id, p.forum_id, p.title, p.body, p.poster_id, p.post_time, p.parent_post_id\
-      FROM posts p\
-      JOIN thread_tree tt ON p.parent_post_id = tt.poster_id\
-    )\
-    SELECT * FROM thread_tree ORDER BY post_time',
-  
-      values:[forum_id]
+      text: `
+    WITH RECURSIVE thread_tree (
+      post_id, forum_id, title, body, poster_id, post_time, parent_post_id
+    ) AS (
+      -- Base case: top-level posts paginated and sorted
+      (
+        SELECT post_id, forum_id, title, body, poster_id, post_time, parent_post_id
+        FROM posts
+        WHERE forum_id = $1 AND parent_post_id IS NULL
+        ORDER BY post_time DESC
+        LIMIT $2 OFFSET $3
+      )
+
+      UNION ALL
+
+      -- Recursive case: replies to top-level or nested posts
+      SELECT p.post_id, p.forum_id, p.title, p.body, p.poster_id, p.post_time, p.parent_post_id
+      FROM posts p
+      JOIN thread_tree tt ON p.parent_post_id = tt.poster_id
+    )
+    SELECT * FROM thread_tree
+    ORDER BY post_time;
+  `,
+      values:[forum_id, page_limit, offset]
     }
 
     const get_post_count_query = {
@@ -115,40 +124,21 @@ router.get('/:forum_id/', async function(req, res, next) {
       values: [forum_id]
     }
 
-    
-    query.text += ' LIMIT ' + String(page_limit);
-    console.log("query text: ", query.text);
-    //append page and offset if present in url query params
-    if (page > 1){
-      let offset = (page * page_limit) - page_limit;
-
-      query.text += ' OFFSET ' + String(offset);
-      console.log("page offset > 0 , query text: ", query.text);
-
-    }
-
-    //paginate search results
-    new_get_posts_query.text += ' LIMIT ' + String(page_limit) + ';';
-    console.log("query text: ", query.text);
-    //append page and offset if present in url query params
-    if (page > 1){
-      let offset = (page * page_limit) - page_limit;
-
-      query.text += ' OFFSET ' + String(offset);
-      console.log("page offset > 0 , query text: ", query.text);
-
-    }
-   
     console.log("final query:", new_get_posts_query);
 
-    //const result = await db.query(query);
+    const [total_posts, post_results] = await Promise.all([
+
+      db.query(get_post_count_query),
+      db.query(new_get_posts_query)
+
+    ]);
     //const total_posts = await db.query(get_post_count_query);
 
-    const post_results = await db.query(new_get_posts_query);
+    //const post_results = await db.query(new_get_posts_query);
 
     const nested_post_results = buildNestedTree(post_results.rows);
     
-    res.json({posts:nested_post_results, total_posts: post_results.rows.length});
+    res.json({posts:nested_post_results, total_posts: total_posts.rows[0].count});
 
 
   } catch (err) {

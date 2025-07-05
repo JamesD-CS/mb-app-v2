@@ -3,7 +3,7 @@ import './Forums.css';
 import {useNavigate} from "react-router-dom";
 
 
-export default function ReplyForm ({forum_data, post_id, onClose}) {
+export default function ReplyForm ({forum_data, post_id, onClose, showToast}) {
   const navigate = useNavigate();
 
   function sendReply (postdata, forum_data, post_id) {
@@ -30,10 +30,12 @@ export default function ReplyForm ({forum_data, post_id, onClose}) {
    console.log("request options:", requestOptions);
    console.log( "postdata:", postdata, 'forum_data:', forum_data, 'post_id', post_id);
 
-   fetch(postendpoint, requestOptions).then((response) => {
-    console.log(response);
-    alert("Message posted");
-    navigate(0);
+    fetch(postendpoint, requestOptions).then((response) => {
+      console.log(response);
+      showToast("Reply posted!", () => {
+      navigate(0);;
+    });
+  
   });
     
   }

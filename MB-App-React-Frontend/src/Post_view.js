@@ -7,6 +7,18 @@ import ModalContent from './ReplyModal.js';
 
 export default function PostView  ({data, forum_id}) {
 
+  const [toastMessage, setToastMessage] = useState('');
+  const TOAST_DURATION = 3000;
+
+  const showToast = (message, onFinish = () => {}) => {
+  setToastMessage(message);
+
+  setTimeout(() => {
+    setToastMessage('');
+    onFinish(); // Called after toast fades out
+  }, TOAST_DURATION); //
+};
+
   const ReplyPortal = ({div_id, poster_id, forum_id}) => {
     const [showModal, setShowModal] = useState(false);
     return (
@@ -17,95 +29,71 @@ export default function PostView  ({data, forum_id}) {
         </button>
         }
         {showModal && createPortal(
-          <ModalContent onClose={() => setShowModal(false)}  poster_id = {poster_id} forum_id={forum_id} />,
+          <ModalContent onClose={() => setShowModal(false)}  poster_id = {poster_id} forum_id={forum_id} showToast={showToast} />,
           document.getElementById(div_id)
         )}
       </>
     );
   }
 
-    const ReplyRows = ({replies, colspan}) =>{
+    const ReplyRows = ({ replies, level = 0 }) => {
+      if (!Array.isArray(replies)) return null;
 
-      let replyrows = [];
+      return replies.map((reply) => (
+        <div
+          key={reply.poster_id}
+          className="reply-block"
+          style={{ marginLeft: `${level * 20}px` }} // Indent based on depth
+        >
+          <div className="reply-header">
+            <span><strong>ID:</strong> {reply.poster_id}</span>
+            <span><strong>Time:</strong> {reply.post_time}</span>
+          </div>
+          <div className="reply-body">{reply.body}</div>
+          <div id={reply.poster_id}>
+            <ReplyPortal
+              div_id={reply.poster_id}
+              poster_id={reply.poster_id}
+              forum_id={forum_id}
+            />
+          </div>
 
-        if (!Array.isArray(replies)) return [];
-        replies.map((reply) =>{
-          
-          replyrows.push(
-  
-              <table className="reply-table">
-                <tbody>
-                <tr>
-                  <td colSpan = {colspan +1} className='hidden'></td>
-                  <td>ID:</td>
-                  <td>{reply.poster_id}</td>
-                  <td>Time:</td>
-                  <td>{reply.post_time}</td>
-                </tr>
-                <tr>
-                  <td colSpan = {colspan} className='hidden'></td>
-                  <td colSpan={colspan + 1}>{reply.body}</td>
-                </tr>
-                <tr>
-                  <td colSpan = {colspan} className='hidden'></td>
-                  <td>
-                    <div id = {reply.poster_id}> 
-                      <ReplyPortal div_id={reply.poster_id} poster_id = {reply.poster_id} forum_id={forum_id}/>          
-                    </div>
-                  </td>
-                </tr>  
-              </tbody>
-            </table>
-          )
-        })
-      
-      return replyrows;
-      
+          {/* Recurse into deeper replies with level + 1 */}
+          <ReplyRows replies={reply.replies} level={level + 1} />
+        </div>
+      ));
     };
   
-    const DisplayData=data.map(
-        (post)=>{
-  
-         //console.log("inside first level map function post replies are:", post.replies);
-         //console.log("data inside displaydata is:", data);
-            return(
-              <div id = {post.poster_id}>
-              <table >
-                <tbody>
-                  <tr>
-                      <td>ID:</td>
-                      <td>{post.poster_id}</td>
-                      <td>Time:</td>
-                      <td>{post.post_time}</td>
-                  </tr>
-                  <tr>
-                      <td>Title:</td>
-                      <td>{post.title}</td>
-                  </tr>
-                  <tr>
-                      <td colSpan={2}>{post.body}</td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div id = {post.poster_id}>
-                        <ReplyPortal div_id={post.poster_id} poster_id={post.poster_id} forum_id={forum_id} />  
-                      </div>
-                    </td>
-                  </tr>
-               
-              </tbody>
-              </table>
-              <ReplyRows replies={post.replies} colspan ={1}/>
-              </div>
-              
-            )
-        }
-    )
+  const DisplayData = data.map((post) => (
+
+    <div key={post.poster_id} className="post-block">
+      <div className="post-header">
+        <span><strong>ID:</strong> {post.poster_id}</span>
+        <span><strong>Time:</strong> {post.post_time}</span>
+      </div>
+      <div className="post-title">
+        <strong>Title:</strong> {post.title}
+      </div>
+      <div className="post-body">{post.body}</div>
+      <div id={post.poster_id}>
+        <ReplyPortal
+          div_id={post.poster_id}
+          poster_id={post.poster_id}
+          forum_id={forum_id}
+        />
+      </div>
+
+      {/* Render replies recursively */}
+      <ReplyRows replies={post.replies} level={1} />
+    </div>
+));
+
   
     return(
         <div>
-            
-                    {DisplayData}
+
+          {toastMessage && <div className="toast fade-in-out">{toastMessage}</div>}
+          {DisplayData}
   
         </div>
     )
