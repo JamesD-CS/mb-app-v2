@@ -33,7 +33,7 @@ services:
       dockerfile: Dockerfile
     container_name: react-frontend
     ports:
-      - '6969:6969'
+      - '6969:4173'
       
 volumes:
   db:

@@ -1,0 +1,7 @@
+FROM node:slim
+WORKDIR /app
+COPY . .
+RUN npm install > /app/npm.log 2>&1
+COPY . .
+CMD [ "npm", "start"]
+EXPOSE 6969

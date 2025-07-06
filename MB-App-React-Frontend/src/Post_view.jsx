@@ -2,7 +2,7 @@ import React from 'react';
 import './Forums.css';
 import { createPortal } from 'react-dom';
 import {useState } from  'react';
-import ModalContent from './ReplyModal.js';
+import ModalContent from './ReplyModal.jsx';
 
 
 export default function PostView  ({data, forum_id}) {

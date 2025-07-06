@@ -11,23 +11,10 @@ textarea {
 
   }
 
-  table {
-    border: 1px solid black;
-    border-radius: 10px;
-    background-color: #96D4D4;
-    padding: 15px;
-    width: 85%;
-
-  }
- 
+  
   button {
     border-radius: 10px;
     border: none;
-
-  }
-
-  .reply-table {
-    margin-left: 100px;
 
   }
 
