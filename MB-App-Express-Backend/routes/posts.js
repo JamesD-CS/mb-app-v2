@@ -160,9 +160,37 @@ router.get('/:forum_id/:poster_id', async function(req, res, next) {
       text: 'SELECT * FROM posts WHERE forum_id = $1 AND poster_id = $2',
       values: [forum_id, poster_id]
     }
-    //console.log(get_post_query);
-    const result = await db.query(get_post_query)
-    let reply_ids = [result.rows[0].replies];
+
+    const new_get_post_query = {
+      name: 'get-post-new' + String(Date.now()),
+      text: `
+    WITH RECURSIVE thread_tree (
+      post_id, forum_id, title, body, poster_id, post_time, parent_post_id
+    ) AS (
+      -- Base case: top-level posts paginated and sorted
+      (
+        SELECT post_id, forum_id, title, body, poster_id, post_time, parent_post_id
+        FROM posts
+        WHERE forum_id = $1 AND poster_id = $2
+        
+      )
+
+      UNION ALL
+
+      -- Recursive case: replies to top-level or nested posts
+      SELECT p.post_id, p.forum_id, p.title, p.body, p.poster_id, p.post_time, p.parent_post_id
+      FROM posts p
+      JOIN thread_tree tt ON p.parent_post_id = tt.poster_id
+    )
+    SELECT * FROM thread_tree
+    ORDER BY post_time;
+  `,
+      values:[forum_id, poster_id]
+    }
+    const post = await db.query(new_get_post_query);
+    let post_thread = buildNestedTree(post.rows)
+    res.json({post:post_thread});
+
    
   } catch (err) {
     console.error(err);
