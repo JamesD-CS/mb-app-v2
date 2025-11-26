@@ -19,8 +19,34 @@ export default function PostView  ({data, forum_id}) {
   }, TOAST_DURATION); //
 };
 
+const modalRoot =
+  typeof document !== 'undefined'
+    ? document.getElementById('modal-root')
+    : null;
+
   const ReplyPortal = ({div_id, poster_id, forum_id}) => {
     const [showModal, setShowModal] = useState(false);
+
+     if (!modalRoot) {
+    // Fallback: render inline if for some reason modal-root isn't there
+    return (
+      <>
+        {!showModal && (
+          <button onClick={() => setShowModal(true)}>
+            Reply
+          </button>
+        )}
+        {showModal && (
+          <ModalContent
+            onClose={() => setShowModal(false)}
+            poster_id={poster_id}
+            forum_id={forum_id}
+            showToast={showToast}
+          />
+        )}
+      </>
+    );
+  }
     return (
       <>
         {!showModal &&

@@ -9,16 +9,23 @@ import {
 import './index.css';
 import Root from './root';
 import Forums from './Forums';
+import Layout from './Layout';
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Root />,
+    element: <Layout />,        // <-- global layout with nav bar
+    children: [
+      {
+        index: true,            // matches "/"
+        element: <Root />,
+      },
+      {
+        path: 'Forums/:forumId', // matches "/Forums/123"
+        element: <Forums />,
+      },
+    ],
   },
-  {
-    path: 'Forums/:forumId/',
-    element: <Forums />,
-  }
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(

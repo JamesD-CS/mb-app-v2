@@ -3,6 +3,8 @@ const db = require('../db.js');
 var router = express.Router();
 const { DateTime } = require("luxon");
 const { v4: uuidv4 } = require('uuid');
+const { postQueue } = require('../postQueue');
+
 
 router.use(express.json());
 
@@ -124,7 +126,7 @@ router.get('/:forum_id/', async function(req, res, next) {
       values: [forum_id]
     }
 
-    console.log("final query:", new_get_posts_query);
+    //console.log("final query:", new_get_posts_query);
 
     const [total_posts, post_results] = await Promise.all([
 
@@ -201,11 +203,30 @@ router.get('/:forum_id/:poster_id', async function(req, res, next) {
 
 //Post message to forum
 router.post('/:forum_id', async function(req, res, next) {
-  let forum_id = Number(req.params.forum_id);
-  let new_datetime = DateTime.now();
-  let newuuid = uuidv4();
-  console.log(req.body);
-  
+  try{
+    const forum_id = Number(req.params.forum_id);
+    const poster_id = uuidv4();
+    const title = req.body.title
+    const body = req.body.body
+    const parent_post_id = null;
+    console.log(req.body);
+    await postQueue.add(
+        'CreatePost',
+        { forum_id, body, title, poster_id , parent_post_id },
+        {
+          jobId: poster_id, // dedupe if client/API retries same command
+          attempts: 5,
+          backoff: { type: 'exponential', delay: 2000 },
+          removeOnComplete: true,
+          removeOnFail: 100,
+        }
+      );
+
+      return res.status(202).json({ status: 'queued', poster_id });
+  } catch (e) {
+    next(e);
+  }
+  /*
   const insert_query = {
     name: 'insert_message',
     text: 'INSERT INTO posts (forum_id, body, title, poster_id , post_time, parent_post_id ) VALUES($1, $2, $3, $4, $5, $6) ',
@@ -221,16 +242,40 @@ router.post('/:forum_id', async function(req, res, next) {
     console.error(error);
     res.status(500).send('Internal Server Error');
   }
+    */
 
 });
 
 //Post reply to message
 router.post('/:forum_id/:post_id', async function(req, res, next) {
-  let forum_id = Number(req.params.forum_id);
-  let new_datetime = DateTime.now();
-  let reply_uuid = uuidv4();
-  let parent_post_id = req.params.post_id
   
+  
+  try{
+    const forum_id = Number(req.params.forum_id);
+    //const new_datetime = DateTime.now();
+    const poster_id = uuidv4();
+    const body = req.body.body
+    const parent_post_id = req.params.post_id;
+  
+    console.log("post request to post reply endpoint:",req.body, "poster id", poster_id);
+
+    await postQueue.add(
+        'CreateReply',
+        { forum_id, body, poster_id, parent_post_id },
+        {
+          jobId: poster_id, // dedupe if client/API retries same command
+          attempts: 5,
+          backoff: { type: 'exponential', delay: 2000 },
+          removeOnComplete: true,
+          removeOnFail: 100,
+        }
+      );
+
+      return res.status(202).json({ status: 'queued', reply_uuid });
+  } catch (e) {
+    next(e);
+  }
+  /*
   //Insert reply to posts table
   const insert_query = {
     name: 'insert_message',
@@ -247,7 +292,7 @@ router.post('/:forum_id/:post_id', async function(req, res, next) {
     console.error(error);
     res.status(500).send('Internal Server Error');
   }
-
+  */
 });
 
 module.exports = router;

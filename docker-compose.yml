@@ -10,8 +10,20 @@ services:
     - POSTGRES_PASSWORD=postgres
     - POSTGRES_DB=postgres
     volumes:
-    - db:/var/lib/postgresql/data
+    - db:/var/lib/postgresql
     - ./sql/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  worker:
+    build: 
+      context: ./MB-App-Express-Backend
+      dockerfile: Dockerfile
+    command: npm run worker
+    env_file: .env
+    depends_on: [redis, db]
 
   express-app:
     #add restart:always to keep trying connection to postgres db
@@ -23,6 +35,7 @@ services:
     ports:
       - '5005:5005'    
     depends_on:
+      - redis
       - db
     links: 
       - db
