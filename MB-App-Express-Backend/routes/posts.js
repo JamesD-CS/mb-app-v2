@@ -114,7 +114,7 @@ router.get('/:forum_id/', async function(req, res, next) {
       JOIN thread_tree tt ON p.parent_post_id = tt.poster_id
     )
     SELECT * FROM thread_tree
-    ORDER BY post_time;
+    ORDER BY post_time DESC;
   `,
       values:[forum_id, page_limit, offset]
     }
